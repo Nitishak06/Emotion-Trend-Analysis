@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EmotionTracker Pro</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+  }
+
+  /* NAV */
+  nav {
+    background: #fff;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 40px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-size: 18px;
+    font-weight: bold;
+    color: #1a73e8;
+    text-decoration: none;
+  }
+
+  .nav-links { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  .nav-links a {
+    text-decoration: none;
+    color: #5f6368;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 7px 12px;
+    border-radius: 6px;
+    transition: background 0.2s, color 0.2s;
+    cursor: pointer;
+  }
+
+  .nav-links a:hover { background: #f1f3f4; color: #1a73e8; }
+  .nav-links a.active { background: #e8f0fe; color: #1a73e8; }
+
+  /* LAYOUT */
+  .page { display: none; }
+  .page.active { display: block; }
+
+  .container {
+    max-width: 680px;
+    margin: 30px auto;
+    padding: 0 16px;
+  }
+
+  /* CARD */
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.07);
+    margin-bottom: 20px;
+  }
+
+  h2 {
+    color: #1a73e8;
+    font-size: 22px;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+
+  .subtitle {
+    text-align: center;
+    color: #5f6368;
+    font-size: 14px;
+    margin-bottom: 20px;
+  }
+
+  /* FORM */
+  textarea {
+    width: 100%;
+    height: 110px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 12px;
+    font-size: 15px;
+    resize: none;
+    font-family: inherit;
+    transition: border 0.2s;
+  }
+
+  textarea:focus { outline: none; border-color: #1a73e8; }
+
+  /* BUTTONS */
+  .btn {
+    width: 100%;
+    padding: 13px;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: 12px;
+    transition: opacity 0.2s;
+  }
+
+  .btn:hover { opacity: 0.88; }
+  .btn-blue { background: #1a73e8; color: #fff; }
+  .btn-green { background: #34a853; color: #fff; }
+  .btn-purple { background: #673ab7; color: #fff; }
+  .btn-red { background: #ea4335; color: #fff; }
+
+  /* RESULT BOX */
+  #result-box {
+    margin-top: 18px;
+    border-radius: 8px;
+    padding: 18px;
+    display: none;
+    animation: fadeUp 0.4s ease;
+  }
+
+  .box-positive { background: #e6f4ea; border-left: 5px solid #34a853; }
+  .box-negative { background: #fce8e6; border-left: 5px solid #ea4335; }
+
+  .result-label {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: #5f6368;
+    margin-top: 12px;
+    margin-bottom: 2px;
+  }
+
+  .result-value {
+    font-size: 16px;
+    font-weight: 500;
+    color: #202124;
+    margin-bottom: 4px;
+  }
+
+  .policy-box {
+    background: #fff;
+    border: 1px dashed #aaa;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    color: #d93025;
+    margin-top: 10px;
+  }
+
+  hr.divider {
+    border: none;
+    border-top: 1px solid #ddd;
+    margin: 14px 0;
+  }
+
+  /* STATS / PROGRESS BARS */
+  .stat-row { margin-bottom: 14px; }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: bold;
+    text-transform: uppercase;
+    color: #5f6368;
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .bar-track {
+    background: #eee;
+    border-radius: 20px;
+    height: 18px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 20px;
+    background: #1a73e8;
+    transition: width 0.6s ease;
+  }
+
+  /* CHART WRAPPER */
+  .chart-wrap {
+    position: relative;
+    height: 300px;
+    margin-top: 16px;
+  }
+
+  /* SCORE */
+  .score-big {
+    font-size: 36px;
+    font-weight: bold;
+    margin: 6px 0;
+  }
+
+  .score-green { color: #188038; }
+  .score-red { color: #d93025; }
+
+  /* MONTHLY ITEM */
+  .month-item {
+    background: #f8f9fa;
+    border-left: 5px solid #673ab7;
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin-bottom: 10px;
+  }
+
+  .month-title { font-size: 15px; font-weight: bold; color: #673ab7; }
+
+  /* CHARTS ROW */
+  .charts-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-top: 16px;
+  }
+
+  .chart-card {
+    flex: 1;
+    min-width: 260px;
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+  }
+
+  .chart-card h4 {
+    text-align: center;
+    color: #5f6368;
+    font-size: 13px;
+    margin-bottom: 10px;
+  }
+
+  .chart-card .chart-wrap { height: 220px; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* LOADING */
+  .loading-text { color: #5f6368; font-size: 15px; padding: 8px 0; }
+</style>
+</head>
+<body>
+
+<!-- NAVBAR -->
+<nav>
+  <a class="logo" href="#">EmotionTracker Pro</a>
+  <div class="nav-links">
+    <a class="active" onclick="showPage('dashboard', this)">Dashboard</a>
+    <a onclick="showPage('analytics', this)">Analytics</a>
+    <a onclick="showPage('personal', this)">Personal Progress</a>
+    <a onclick="showPage('monthly', this)">Monthly Trends</a>
+    <a onclick="showPage('journey', this)">Emotional Journey</a>
+  </div>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="container">
+    <div class="card">
+      <h2>Youth Emotion Tracker</h2>
+      <p class="subtitle">AI-Powered Sentiment &amp; Intent Analysis</p>
+
+      <textarea id="userInput" placeholder="How are you feeling today? (e.g., I feel stuck and lonely...)"></textarea>
+
+      <button class="btn btn-blue" onclick="analyzeText()">Run AI Decoding</button>
+      <button class="btn btn-red" onclick="resetProject()">Clear All Research Data</button>
+
+      <div id="result-box"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ANALYTICS -->
+<div id="page-analytics" class="page">
+  <div class="container">
+    <div class="card">
+      <h2>Official Government Analytics</h2>
+      <button class="btn btn-green" onclick="generateGovtReport()">Generate 7-Day Govt Report</button>
+
+      <div id="govt-content"></div>
+
+      <div class="charts-row">
+        <div class="chart-card">
+          <h4>Topic Distribution</h4>
+          <div class="chart-wrap"><canvas id="topicPieChart"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <h4>Emotional Climate</h4>
+          <div class="chart-wrap"><canvas id="emotionDoughnutChart"></canvas></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- PERSONAL PROGRESS -->
+<div id="page-personal" class="page">
+  <div class="container">
+    <div class="card">
+      <h2>Your 7-Day Personal Insight</h2>
+      <button class="btn btn-blue" onclick="generatePersonalReport()">View My Personal Progress</button>
+      <div id="personal-content" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MONTHLY TRENDS -->
+<div id="page-monthly" class="page">
+  <div class="container">
+    <div class="card">
+      <h2>Monthly Youth Trend Summary</h2>
+      <button class="btn btn-purple" onclick="generateMonthlyReport()">View Monthly Trend Analysis</button>
+      <div id="monthly-content" style="margin-top:16px;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- EMOTIONAL JOURNEY -->
+<div id="page-journey" class="page">
+  <div class="container">
+    <div class="card">
+      <h2>My Emotional Journey</h2>
+      <div class="chart-wrap" style="height:360px;">
+        <canvas id="emotionCurveChart"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const API = 'http://127.0.0.1:8080';
+
+let topicChart = null;
+let emotionChart = null;
+let journeyChart = null;
+
+/* ---- NAV ---- */
+function showPage(name, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-links a').forEach(a => a.classList.remove('active'));
+
+  document.getElementById('page-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+
+  if (name === 'journey') loadJourney();
+}
+
+/* ---- ANALYZE ---- */
+async function analyzeText() {
+  const text = document.getElementById('userInput').value.trim();
+  const box = document.getElementById('result-box');
+
+  if (!text) { alert('Please enter some text first!'); return; }
+
+  box.style.display = 'block';
+  box.className = '';
+  box.innerHTML = '<p class="loading-text">⏳ AI is decoding your input...</p>';
+
+  try {
+    const res = await fetch(API + '/analyze', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text })
+    });
+
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+
+    box.className = d.emotion === 'NEGATIVE' ? 'box-negative' : 'box-positive';
+    box.innerHTML = `
+      <div class="result-label">Primary Intent</div>
+      <div class="result-value">${d.intent} (${d.confidence}%)</div>
+
+      <div class="result-label">Detected Emotion</div>
+      <div class="result-value" style="color:${d.emotion === 'NEGATIVE' ? '#d93025' : '#188038'}; font-weight:bold;">${d.emotion}</div>
+
+      <div class="result-label">Daily Guidance</div>
+      <div class="result-value"><em>"${d.guidance}"</em></div>
+
+      <hr class="divider">
+
+      <div class="result-label">Govt Analytics Alert</div>
+      <div class="policy-box">${d.policy}</div>
+    `;
+  } catch {
+    box.innerHTML = '<p style="color:#d93025;">Error: Ensure app.py is running!</p>';
+  }
+}
+
+/* ---- GOVT REPORT ---- */
+async function generateGovtReport() {
+  const content = document.getElementById('govt-content');
+  content.innerHTML = '<p class="loading-text">⏳ Generating report...</p>';
+
+  try {
+    const res = await fetch(API + '/government_report');
+    const d = await res.json();
+
+    if (d.error) { alert(d.error); return; }
+
+    let html = `<p style="font-size:15px; margin:16px 0;"><strong>Data Points Collected:</strong> ${d.total_samples}</p>`;
+
+    for (const [topic, count] of Object.entries(d.trends)) {
+      const pct = ((count / d.total_samples) * 100).toFixed(1);
+      html += `
+        <div class="stat-row">
+          <div class="stat-label">${topic} (${pct}%)</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%"></div></div>
+        </div>`;
+    }
+
+    html += `<div class="policy-box" style="margin-top:16px;">${d.latest_alert}</div>`;
+    content.innerHTML = html;
+
+    if (topicChart) topicChart.destroy();
+    const tc = document.getElementById('topicPieChart').getContext('2d');
+    topicChart = new Chart(tc, {
+      type: 'pie',
+      data: {
+        labels: Object.keys(d.trends),
+        datasets: [{ data: Object.values(d.trends), backgroundColor: ['#1a73e8','#34a853','#fbbc05','#ea4335','#673ab7'] }]
+      }
+    });
+
+    if (emotionChart) emotionChart.destroy();
+    const ec = document.getElementById('emotionDoughnutChart').getContext('2d');
+    emotionChart = new Chart(ec, {
+      type: 'doughnut',
+      data: {
+        labels: ['Positive', 'Negative'],
+        datasets: [{ data: [d.emotions.POSITIVE || 0, d.emotions.NEGATIVE || 0], backgroundColor: ['#188038','#d93025'] }]
+      }
+    });
+
+  } catch {
+    content.innerHTML = '<p style="color:#d93025;">Error: Ensure app.py is running!</p>';
+  }
+}
+
+/* ---- PERSONAL REPORT ---- */
+async function generatePersonalReport() {
+  const content = document.getElementById('personal-content');
+  content.innerHTML = '<p class="loading-text">⏳ Loading your data...</p>';
+
+  try {
+    const res = await fetch(API + '/personal_report');
+    const d = await res.json();
+
+    if (d.error) { alert(d.error); return; }
+
+    const score = d.score || 0;
+    const isGood = score > 50;
+
+    content.innerHTML = `
+      <div class="${isGood ? 'box-positive' : 'box-negative'}" style="border-radius:8px; padding:18px;">
+        <div class="result-label">Wellness Score</div>
+        <div class="score-big ${isGood ? 'score-green' : 'score-red'}">${score}%</div>
+
+        <div class="result-label" style="margin-top:12px;">Main Area of Focus</div>
+        <div class="result-value">${(d.top_focus || 'General').toUpperCase()}</div>
+
+        <div class="result-label">Entries Analysed</div>
+        <div class="result-value">${d.total_entries || 0}</div>
+
+        <hr class="divider">
+        <p style="color:#5f6368; font-style:italic; font-size:14px;">
+          "${d.summary || 'Keep tracking your emotions to see more insights!'}"
+        </p>
+      </div>
+    `;
+  } catch {
+    content.innerHTML = '<p style="color:#d93025;">Error: Ensure app.py is running!</p>';
+  }
+}
+
+/* ---- MONTHLY REPORT ---- */
+async function generateMonthlyReport() {
+  const content = document.getElementById('monthly-content');
+  content.innerHTML = '<p class="loading-text">⏳ Loading monthly data...</p>';
+
+  try {
+    const res = await fetch(API + '/monthly_report');
+    const d = await res.json();
+
+    if (d.error) { alert(d.error); return; }
+
+    let html = '';
+    for (const [month, v] of Object.entries(d)) {
+      html += `
+        <div class="month-item">
+          <div class="month-title">${month}</div>
+          <p style="margin:4px 0; font-size:14px;"><strong>Average Wellness:</strong> ${v.Tone}%</p>
+          <p style="margin:0; font-size:14px;"><strong>Primary Monthly Focus:</strong> ${v.Topic.toUpperCase()}</p>
+        </div>`;
+    }
+
+    content.innerHTML = html || '<p style="color:#5f6368;">No data yet.</p>';
+  } catch {
+    content.innerHTML = '<p style="color:#d93025;">Error: Ensure app.py is running!</p>';
+  }
+}
+
+/* ---- JOURNEY CHART ---- */
+async function loadJourney() {
+  const canvas = document.getElementById('emotionCurveChart');
+  if (!canvas) return;
+
+  try {
+    const res = await fetch(API + '/personal_report');
+    const d = await res.json();
+
+    if (!d.history || d.history.length === 0) return;
+
+    const labels = d.history.map(i => i.date);
+    const scores = d.history.map(i => i.score);
+
+    if (journeyChart) journeyChart.destroy();
+
+    journeyChart = new Chart(canvas.getContext('2d'), {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          label: 'Wellness Trend',
+          data: scores,
+          borderColor: '#1a73e8',
+          backgroundColor: 'rgba(26,115,232,0.1)',
+          fill: true,
+          tension: 0.4,
+          pointRadius: 4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: { y: { beginAtZero: true, max: 100 } }
+      }
+    });
+  } catch (e) {
+    console.error('Journey chart error:', e);
+  }
+}
+
+/* ---- RESET ---- */
+function resetProject() {
+  if (!confirm('Clear all research data for the demo?')) return;
+  fetch(API + '/reset_data', { method: 'POST' })
+    .then(r => r.json())
+    .then(d => { alert(d.message); location.reload(); })
+    .catch(() => alert('Error: Ensure app.py is running!'));
+}
+</script>
+</body>
+</html>
